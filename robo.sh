@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Configurações do Banco
-DB_USER="Seu User"
-DB_PASS="Sua Senha"
-DB_NAME="Seu banco"
-DB_HOST="Seu ip"
+DB_USER=" "
+DB_PASS=" "
+DB_NAME=" "
+DB_HOST=" "
 
 # 1. Coletar CPU (Uso em %)
 # O comando top extrai apenas o uso de CPU idle, e o awk calcula o usado
