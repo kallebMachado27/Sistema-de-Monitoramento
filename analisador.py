@@ -65,34 +65,55 @@ try:
     cursor = conn.cursor()
 
     # Consulta média dos últimos 5 minutos
+        # Consulta média dos últimos 5 minutos para TODOS os indicadores
     query = """
-        SELECT AVG(cpu_percent) 
+        SELECT 
+            AVG(cpu_percent), 
+            AVG(mem_percent), 
+            AVG(disk_percent) 
         FROM metricas 
         WHERE data_hora >= NOW() - INTERVAL 5 MINUTE
     """
     cursor.execute(query)
     result = cursor.fetchone()
-    avg_cpu = result[0]
+    
+    # "Desempacota" os dados (um em cada variável)
+    avg_cpu, avg_ram, avg_disk = result
 
     # Lógica Principal
-    if avg_cpu is not None:
-        print(f"[STATUS] Média de CPU (5 min): {avg_cpu:.2f}%")
+    # Define os limites críticos para cada recurso
+    LIMITE_CPU = 80.0
+    LIMITE_RAM = 90.0
+    LIMITE_DISCO = 90.0
 
-        # Verifica se a CPU está alta 
-        if avg_cpu > 80.0:
-            print("[ALERT] CPU acima do limiar crítico (>80%). Iniciando protocolo de recuperação.")
-            
-            # 1. Chama a  função e captura o retorno (quem morreu?)
-            mensagem_log = trigger_mitigation()
-            
-            # 2. Registra o incidente no banco 
-            cursor.execute("INSERT INTO metricas (cpu_percent, mem_percent, disk_percent, descricao) VALUES (-1, 0, 0, %s)", (mensagem_log,))
-            conn.commit()
-            print("[LOG] Incidente registrado no banco de dados.")
-        else:
-            print("[STATUS] Sistema operando dentro dos parâmetros normais.")
+    # Variável para saber o motivo do alerta
+    motivo = "Normal"
+
+    # Verifica cada recurso individualmente (OR = OU)
+    if avg_cpu > LIMITE_CPU:
+        motivo = "CPU Crítica"
+    elif avg_ram > LIMITE_RAM:
+        motivo = "Memória Cheia"
+    elif avg_disk > LIMITE_DISCO:
+        motivo = "Disco Cheio"
+    
+    # Status na tela
+    print(f"[STATUS] CPU: {avg_cpu:.2f}% | RAM: {avg_ram:.2f}% | Disco: {avg_disk:.2f}%")
+
+    # Se encontrar um problema (motivo != Normal), ativa a ação
+    if motivo != "Normal":
+        print(f"[ALERT] Disparado por: {motivo}. Iniciando protocolo de recuperação.")
+        
+        # Executa a mitigação e captura o log de volta
+        mensagem_log = trigger_mitigation()
+        
+        # Grava no banco (agora com o motivo no registro)
+        texto_descricao = f"{motivo} - {mensagem_log}"
+        cursor.execute("INSERT INTO metricas (cpu_percent, mem_percent, disk_percent, descricao) VALUES (-1, 0, 0, %s)", (texto_descricao,))
+        conn.commit()
+        print("[LOG] Incidente registrado no banco de dados.")
     else:
-        print("[ERROR] Nenhum dado recebido da base de dados.")
+        print("[STATUS] Sistema operando dentro dos parâmetros normais.")
 
     conn.close()
 
