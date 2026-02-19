@@ -3,10 +3,10 @@ from datetime import datetime, timedelta
 
 # Conexão com o banco no servidor Linux
 db = mysql.connector.connect(
-    host="192.168.1.12",
-    user="kalleb",
-    password="123456",
-    database="Monitoramento"
+    host="",
+    user="",
+    password="",
+    database=""
 )
 
 cursor = db.cursor()
@@ -23,7 +23,7 @@ media_cpu = resultado[0]
 
 print(f"Média de CPU nos últimos 5 min: {media_cpu:.2f}%")
 
-
+# Lógica de "Auto-Healing" (Simulação)
 if media_cpu > 80.0:
     print("⚠️ ALERTA: CPU CRÍTICA! Acionando protocolo de segurança...")
   
